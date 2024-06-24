@@ -1,0 +1,6 @@
+(executables ((names (main)) (libraries (command_unix core))))
+
+(enforce_style (
+  (ocamlformat             ())
+  (vertical_alignment_beta ())
+  (sexp_styler             ())))
