@@ -59,23 +59,98 @@ let%expect_test "get_list_items" =
     |}]
 ;;
 
+(* let get_all_unordered_lists contents = let open Soup in parse contents $$
+   "ul" |> to_list |> List.map ~f:(fun ul -> ul $ "li") ;; *)
+
+(* |> List.map ~f:(fun ul -> texts ul ) *)
+
 (* Gets the first item of all unordered lists contained in an HTML page. *)
 let get_first_item_of_all_unordered_lists contents : string list =
-  ignore (contents : string);
-  failwith "TODO"
+  let open Soup in
+  parse contents
+  $$ "ul"
+  |> to_list
+  |> List.map ~f:(fun ul -> List.hd_exn (get_list_items (to_string ul)))
 ;;
+
+(* let all_unordered_lists = get_all_unordered_lists contents in List.map
+   all_unordered_lists ~f:(fun ul -> List.hd_exn (get_list_items ul)) *)
+
+let%expect_test "get_first_item_of_all_unordered_lists" =
+  (* This test uses existing files on the filesystem. *)
+  let contents =
+    File_fetcher.fetch_exn
+      (Local (File_path.of_string "../resources/wiki"))
+      ~resource:"Carnivore"
+  in
+  List.iter (get_first_item_of_all_unordered_lists contents) ~f:print_endline;
+  [%expect
+    {| 
+    All feliforms, such as domestic cats, big cats, hyenas, mongooses, civets
+    All birds of prey, such as hawks, eagles, falcons and owls
+|}]
+;;
+
+(* Go through HTML tags*)
+(* if you encounter a list tag *)
+(* Get the list items *)
+(* Store the first list item in an list *)
+(* return the list *)
+
+(* ignore (contents : string); failwith "TODO" *)
 
 (* Gets the first item of the second unordered list in an HTML page. *)
 let get_first_item_of_second_unordered_list contents : string =
-  ignore (contents : string);
-  failwith "TODO"
+  let open Soup in
+  let unordered_lists = parse contents $$ "ul" |> to_list in
+  let second_node = List.nth_exn unordered_lists 1 in
+  List.hd_exn (get_list_items (to_string second_node))
+;;
+
+let%expect_test "get_first_item_of_second_unordered_list" =
+  (* This test uses existing files on the filesystem. *)
+  let contents =
+    File_fetcher.fetch_exn
+      (Local (File_path.of_string "../resources/wiki"))
+      ~resource:"Carnivore"
+  in
+  print_endline (get_first_item_of_second_unordered_list contents);
+  [%expect
+    {| 
+    All birds of prey, such as hawks, eagles, falcons and owls
+|}]
 ;;
 
 (* Gets all bolded text from an HTML page. *)
 let get_bolded_text contents : string list =
-  ignore (contents : string);
-  failwith "TODO"
+  let open Soup in
+  parse contents
+  $$ "b"
+  |> to_list
+  |> List.map ~f:(fun li ->
+    texts li |> String.concat ~sep:"" |> String.strip)
 ;;
+
+let%expect_test "get_bolded_text" =
+  (* This test uses existing files on the filesystem. *)
+  let contents =
+    File_fetcher.fetch_exn
+      (Local (File_path.of_string "../resources/wiki"))
+      ~resource:"Carnivore"
+  in
+  List.iter (get_bolded_text contents) ~f:print_endline;
+  [%expect
+    {| 
+    carnivore
+    Predators
+    Scavengers
+    insectivores
+    piscivores
+
+|}]
+;;
+
+(* ignore (contents : string); failwith "TODO" *)
 
 (* [make_command ~summary ~f] is a helper function that builds a simple HTML
    parsing command. It takes in a [summary] for the command, as well as a
