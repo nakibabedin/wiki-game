@@ -1,5 +1,13 @@
 open! Core
 
+let not_namespace link =
+  let option = (Wikipedia_namespace.namespace link) in
+  match option with
+  | None -> true
+  | Some _namespace -> false;
+
+;;
+
 (* [get_linked_articles] should return a list of wikipedia article lengths contained in
    the input.
 
@@ -15,9 +23,41 @@ open! Core
    uniformity in article format. We can expect that all Wikipedia article links parsed
    from a Wikipedia page will have the form "/wiki/<TITLE>". *)
 let get_linked_articles contents : string list =
-  ignore (contents : string);
-  failwith "TODO"
+  
+
+  let open Soup in
+  parse contents
+  $$ "a[href*=/wiki/]" 
+(* in R.attribute "href" contents *)
+  |> to_list
+  |> List.map ~f:(fun a -> R.attribute "href" a)
+  |> List.filter ~f:( not_namespace )
+  |> List.dedup_and_sort ~compare:(String.compare)
+
+
+  (* ignore (contents : string);
+  failwith "TODO" *)
 ;;
+
+let%expect_test "get_linked_articles" =
+  (* This test uses existing files on the filesystem. *)
+  let contents =
+    File_fetcher.fetch_exn
+      (Local (File_path.of_string "../resources/wiki/"))
+      ~resource:"Cat"
+  in
+  List.iter (get_linked_articles contents) ~f:print_endline;
+  [%expect
+    {| 
+    /wiki/Carnivore
+    /wiki/Domestication_of_the_cat
+    /wiki/Mammal
+    /wiki/Species
+
+|}]
+;;
+
+
 
 let print_links_command =
   let open Command.Let_syntax in
