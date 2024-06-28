@@ -115,6 +115,7 @@ let correct_url url (how_to_fetch :File_fetcher.How_to_fetch.t) =
   match how_to_fetch with
   | Local _ -> url
   | Remote -> if not (String.is_prefix ~prefix:"https://" url) then "https://en.wikipedia.org" ^ url else url
+;;
 
 
 let print_links_command =
@@ -289,9 +290,9 @@ let rec find_path_helper ?(max_depth=3) ~(level:(string * string list) Base.Queu
         
         )
   | false -> (
-        match equal max_depth 0 with 
+        (* match equal max_depth 0 with 
         | true -> None
-        | false -> (
+        | false -> ( *)
 
 
     let next_level :(string * string list) Base.Queue.t = Queue.create () in
@@ -301,6 +302,8 @@ let rec find_path_helper ?(max_depth=3) ~(level:(string * string list) Base.Queu
       fun level_node ->  
         let curr_node, curr_path = level_node in
         let correct_origin = correct_url curr_node how_to_fetch in 
+        
+
 
         (* print_endline correct_origin; *)
         
@@ -313,7 +316,7 @@ let rec find_path_helper ?(max_depth=3) ~(level:(string * string list) Base.Queu
         fun item -> String.equal (fst item) (fst node)
       ))) in
     
-      find_path_helper ~max_depth:(max_depth-1) ~level:next_level_without_dupes ~destination ~how_to_fetch ~visited:next_visited) ())
+      find_path_helper ~max_depth:(max_depth-1) ~level:next_level_without_dupes ~destination ~how_to_fetch ~visited:next_visited) ()
 ;
 
 
@@ -380,9 +383,22 @@ let find_path_command =
           ~doc:"INT maximum length of path to search for (default 10)"
       in
       fun () ->
+        (* bfs pre-processing things *)
+        let start_time = Time_now.nanoseconds_since_unix_epoch () in
+          match find_path ~max_depth ~origin ~destination ~how_to_fetch () with
+          | None -> print_endline "No path found!"
+          | Some trace ->
+            let end_time = Time_now.nanoseconds_since_unix_epoch () in
+            let time_taken = Base.Int63.( - ) end_time start_time in
+            print_s
+              [%message (trace : string list) ~time_taken: (Float.( / ) (Float.of_int63 time_taken) (Float.of_int 1000000000) : Float.t)]
+
+
+(* 
+      fun () ->
         match find_path ~max_depth ~origin ~destination ~how_to_fetch () with
         | None -> print_endline "No path found!"
-        | Some trace -> List.iter trace ~f:(fun item -> print_endline (correct_url item how_to_fetch))]
+        | Some trace -> List.iter trace ~f:(fun item -> print_endline (correct_url item how_to_fetch))*)]
 ;;
 
 let command =
